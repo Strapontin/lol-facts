@@ -18,6 +18,48 @@ namespace lol_facts.IO
 
             if (!File.Exists(Constant.FactsWithUnknownTagFilePath))
                 File.Create(Constant.FactsWithUnknownTagFilePath);
+
+            if (!File.Exists(Constant.ChangelogChannelsFilePath))
+                File.Create(Constant.ChangelogChannelsFilePath);
+        }
+
+        /// <summary>
+        /// Generate the Facts file at the start of the program from all RawFacts
+        /// </summary>
+        internal static void GenerateFactFile()
+        {
+            var rawFactsFiles = Directory.GetFiles(Constant.RawFactsPath, string.Empty, SearchOption.AllDirectories);
+
+            var facts = string.Empty;
+
+            foreach (var rawFactFile in rawFactsFiles)
+            {
+                facts += string.Join('\n', File.ReadAllLines(rawFactFile).ToList().Skip(1)) + '\n';
+            }
+
+            File.WriteAllText(Constant.FactsFilePath, facts);
+        }
+
+        /// <summary>
+        /// Reads the last available change log
+        /// </summary>
+        /// <returns></returns>
+        internal static string ReadLastAvailableChangelog()
+        {
+            var changelogs = Directory.GetFiles(Constant.ChangelogPath, string.Empty, SearchOption.TopDirectoryOnly).ToList();
+
+            string result = string.Empty;
+
+            // If there are multiple changelogs, we write them all
+            foreach (var changelog in changelogs)
+            {
+                // Notes the version of the file
+                result += Path.GetFileNameWithoutExtension(changelog) + "\n\n";
+
+                result += string.Join("\n", File.ReadLines(changelog));
+            }
+
+            return result;
         }
 
         /// <summary>
@@ -27,7 +69,7 @@ namespace lol_facts.IO
         public static List<Fact> ReadAllFacts()
         {
             var result = File.ReadAllLines(Constant.FactsFilePath)
-                             .Skip(1)
+                             //.Skip(1)
                              .Select(content => FromCsvToFact(content))
                              .ToList();
 
@@ -66,6 +108,42 @@ namespace lol_facts.IO
             enabledChannels.RemoveAll(ec => ec == channelId.ToString());
 
             File.WriteAllLines(Constant.EnabledChannelsFilePath, enabledChannels);
+        }
+
+        /// <summary>
+        /// Adds a channel id to the enabled changelogs file
+        /// </summary>
+        /// <param name="channelId"></param>
+        public static void AddEnableChangelog(ulong channelId)
+        {
+            var enabledChangelogChannels = ReadAllEnabledChangelogChannels();
+            enabledChangelogChannels.Add(channelId.ToString());
+
+            File.WriteAllLines(Constant.ChangelogChannelsFilePath, enabledChangelogChannels.Distinct());
+        }
+
+        /// <summary>
+        /// Removes a channel id to the enabled changelogs file
+        /// </summary>
+        /// <param name="channelId"></param>
+        public static void RemoveEnableChangelog(ulong channelId)
+        {
+            var enabledChangelogChannels = ReadAllEnabledChangelogChannels();
+            enabledChangelogChannels.RemoveAll(ec => ec == channelId.ToString());
+
+            File.WriteAllLines(Constant.ChangelogChannelsFilePath, enabledChangelogChannels);
+        }
+
+        /// <summary>
+        /// Reads all enabled changelog channels
+        /// </summary>
+        /// <returns></returns>
+        public static List<string> ReadAllEnabledChangelogChannels()
+        {
+            var enabledChangelogChannels = File.ReadAllLines(Constant.ChangelogChannelsFilePath)
+                                   .ToList();
+
+            return enabledChangelogChannels;
         }
 
         /// <summary>
@@ -114,6 +192,19 @@ namespace lol_facts.IO
             return data;
         }
 
+        /// <summary>
+        /// Moves the change log files to the archives folder so they won't be send again
+        /// </summary>
+        internal static void ArchiveChangelogs()
+        {
+            var changelogs = Directory.GetFiles(Constant.ChangelogPath, string.Empty, SearchOption.TopDirectoryOnly).ToList();
+
+            foreach (var changelog in changelogs)
+            {
+                File.Move(changelog, Path.Combine(Constant.ChangelogArchivesPath, Path.GetFileName(changelog)), true);
+            }
+        }
+
         #region Private methods
 
         /// <summary>
@@ -127,10 +218,10 @@ namespace lol_facts.IO
 
             Fact result = new Fact()
             {
-                Text = values[0],
-                OriginalText = values[1],
-                Tags = values[2].Split(',').ToList(),
-                Url = values[3],
+                Name = values[0],
+                Text = values[1],
+                OriginalText = values[2],
+                Tags = values[3].Split(',').ToList(),
             };
 
             return result;

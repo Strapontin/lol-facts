@@ -24,7 +24,11 @@ namespace lol_facts
 
             var discord = new DiscordClient(new DiscordConfiguration()
             {
-                Token = Environment.GetEnvironmentVariable("DISCORD_KEY"),
+#if DEBUG
+                Token = Environment.GetEnvironmentVariable("DISCORD_KEY_LOL_FACTS_DEBUG"),
+#else
+                Token = Environment.GetEnvironmentVariable("DISCORD_KEY_LOL_FACTS"),
+#endif
                 TokenType = TokenType.Bot,
                 Intents = DiscordIntents.AllUnprivileged,
                 MinimumLogLevel = Microsoft.Extensions.Logging.LogLevel.Debug,
@@ -63,6 +67,34 @@ namespace lol_facts
                     await componentInteractionCreateEventArgs.Interaction.CreateResponseAsync(InteractionResponseType.DeferredMessageUpdate);
                 }
             };
+
+            discord.ClientErrored += async (discordClient, componentInteractionCreateEventArgs) =>
+            {
+                Console.WriteLine(componentInteractionCreateEventArgs);
+            };
+
+            discord.Ready += async (discordClient, componentInteractionCreateEventArgs) =>
+            {
+                // On discord ready, send a changelog to all channels that ask for it if we're in release 
+#if !DEBUG
+                string changelogContent = FileReader.ReadLastAvailableChangelog();
+
+                if (!string.IsNullOrEmpty(changelogContent))
+                {
+                    foreach (var channel in FileReader.ReadAllEnabledChangelogChannels())
+                    {
+                        DiscordChannel discordChannel = await discordClient.GetChannelAsync(ulong.Parse(channel));
+
+
+                        await discordClient.SendMessageAsync(discordChannel, changelogContent);
+                    }
+
+                    FileReader.ArchiveChangelogs();
+                }
+#endif
+            };
+
+            FileReader.GenerateFactFile();
 
             await discord.ConnectAsync();
             await Task.Delay(-1);

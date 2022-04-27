@@ -26,7 +26,8 @@ namespace lol_facts.Commands
         {
             List<string> authorizedCommands = new List<string>()
             {
-                "enable", 
+                "enable",
+                "enablechangelogs",
             };
 
             // If the channel isn't enabled, it isn't a private message and the command isn't supposed to authorize it, cancel the command
@@ -45,11 +46,25 @@ namespace lol_facts.Commands
         public async Task FactCommand(CommandContext ctx, string tag = null, int index = -1)
         {
             string formattedTag = TagsShortcut.ReplaceTagsShortcut(tag);
+            index--;
 
-            // Select all facts with specific tag
-            var facts = FileReader.ReadAllFacts()
-                .Where(f => string.IsNullOrEmpty(tag) || f.Tags.Select(t => t.FormatTag()).Contains(formattedTag.FormatTag()))
-                .ToList();
+            List<Fact> facts;
+
+            // If the tag is "lore", the search is special
+            if (tag.FormatTag() == "lore")
+            {
+                facts = FileReader.ReadAllFacts()
+                    // Where tag is Lore OR tag isn't LoadingScreen
+                    .Where(f => f.Tags.Select(t => t.FormatTag()).Contains("lore") || !f.Tags.Select(t => t.FormatTag()).Contains("loadingscreen"))
+                    .ToList();
+            }
+            else
+            {
+                // Select all facts with specific tag
+                facts = FileReader.ReadAllFacts()
+                    .Where(f => string.IsNullOrEmpty(tag) || f.Tags.Select(t => t.FormatTag()).Contains(formattedTag.FormatTag()))
+                    .ToList();
+            }
 
             Fact fact;
             bool isCorrectSearch;
@@ -82,7 +97,21 @@ namespace lol_facts.Commands
                     fact = facts[index];
                 }
 
-                message = $"Fact {index + 1}/{facts.Count} sur {tag}\n{fact.Text}";
+                message = $"Fact {index + 1}/{facts.Count}";
+
+                if (!string.IsNullOrEmpty(tag))
+                {
+                    message += $" sur {tag}";
+                }
+
+                string factTextFormatted = fact.Text.Replace("\"\"", "\"").Replace("\\n", "\n");
+
+                if (factTextFormatted.StartsWith('"'))
+                {
+                    factTextFormatted = factTextFormatted.Substring(1, factTextFormatted.Length - 2);
+                }
+
+                message += $"\n{factTextFormatted}";
             }
 
             string username;
@@ -134,6 +163,36 @@ namespace lol_facts.Commands
             await ctx.RespondAsync("Ce salon n'est plus autorisé :(");
         }
 
+        [Command("enablechangelogs")]
+        [Description("Allows changelogs to be displayed in this channel. Can only be executed by a user with Administrator permissions")]
+        public async Task EnableChangelogsCommand(CommandContext ctx)
+        {
+            if ((ctx.Member.Permissions & DSharpPlus.Permissions.Administrator) == DSharpPlus.Permissions.None)
+            {
+                await ctx.RespondAsync("Vous n'avez pas les droits pour effectuer cette action");
+                return;
+            }
+
+            FileReader.AddEnableChangelog(ctx.Channel.Id);
+
+            await ctx.RespondAsync("Changelogs activés dans ce salon.");
+        }
+
+        [Command("disablechangelogs")]
+        [Description("Deny changelogs to be displayed in this channel. Can only be executed by a user with Administrator permissions")]
+        public async Task DisableChangelogCommand(CommandContext ctx)
+        {
+            if ((ctx.Member.Permissions & DSharpPlus.Permissions.Administrator) == DSharpPlus.Permissions.None)
+            {
+                await ctx.RespondAsync("Vous n'avez pas les droits pour effectuer cette action");
+                return;
+            }
+
+            FileReader.RemoveEnableChangelog(ctx.Channel.Id);
+
+            await ctx.RespondAsync("Changelogs désactivés dans ce salon.");
+        }
+
         [Command("stat")]
         [Hidden()]
         public async Task StatCommand(CommandContext ctx)
@@ -167,16 +226,16 @@ namespace lol_facts.Commands
             }
         }
 
-        [Command("stat")]
-        [Hidden()]
-        public async Task StatCommand(CommandContext ctx, string tag)
-        {
-            // Sends the stats only if the channel is private
-            if (!ctx.Channel.IsPrivate)
-                return;
+        //[Command("stat")]
+        //[Hidden()]
+        //public async Task StatCommand(CommandContext ctx, string tag)
+        //{
+        //    // Sends the stats only if the channel is private
+        //    if (!ctx.Channel.IsPrivate)
+        //        return;
 
-            // Gets the data from the file
-            var stats = FileReader.ReadAllStats();
-        }
+        //    // Gets the data from the file
+        //    var stats = FileReader.ReadAllStats();
+        //}
     }
 }
