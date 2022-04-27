@@ -97,12 +97,17 @@ namespace lol_facts.Commands
                     fact = facts[index];
                 }
 
+                // Fact header : index
                 message = $"Fact {index + 1}/{facts.Count}";
 
+                // Shows the tag selected if there is one
                 if (!string.IsNullOrEmpty(tag))
                 {
                     message += $" sur {tag}";
                 }
+
+                // Shows all tags on this fact
+                message += $" ({string.Join(", ", fact.Tags)})";
 
                 string factTextFormatted = fact.Text.Replace("\"\"", "\"").Replace("\\n", "\n");
 

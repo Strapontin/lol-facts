@@ -19,13 +19,34 @@
   </ItemGroup>
 
   <ItemGroup>
+    <None Update="Content\Changelogs\1.0.0.txt">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="Content\Changelogs\Archives\old.txt">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
     <None Update="Content\facts.csv">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="Content\RawFacts\0-LoadingScreen\LoadingScreen.csv">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="Content\RawFacts\1-Regions\Ionia.csv">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="Content\RawFacts\2-Species\Darkin.csv">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="Content\RawFacts\2-Species\Vastaya.csv">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="Content\RawFacts\3-Champions\Aatrox.csv">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
   </ItemGroup>
 
   <Target Name="PostBuild" AfterTargets="PostBuildEvent">
-    <Exec Command="echo &quot;$(SolutionDir)&quot;&#xD;&#xA;xcopy /Y /S &quot;$(SolutionDir)Content\Changelogs\&quot; &quot;$(TargetDir)Content\Changelogs\&quot;&#xD;&#xA;xcopy /Y /S &quot;$(SolutionDir)Content\RawFacts\&quot; &quot;$(TargetDir)Content\RawFacts\&quot;" />
+    <Exec Command="echo &quot;$(SolutionDir)&quot;" />
   </Target>
 
 </Project>
