@@ -42,10 +42,18 @@ namespace lol_facts.Commands
         }
 
         [Command("fact")]
-        [Description("Gives a fact")]
+        [Description("Gives a fact.\nFormat : !fact {tag} {index} where tag is a tag to search that the fact must contains, and index is the index of the list of facts found.")]
         public async Task FactCommand(CommandContext ctx, string tag = null, int index = -1)
         {
             string formattedTag = TagsShortcut.ReplaceTagsShortcut(tag);
+            
+            // If the tag is a number, and the index = -1, then the tag is the index
+            if (int.TryParse(tag, out int i) && index == -1)
+            {
+                index = i;
+                tag = null;
+            }
+            
             index--;
 
             List<Fact> facts;
@@ -133,7 +141,7 @@ namespace lol_facts.Commands
                 mention = ctx.Member.Mention;
             }
 
-            FileReader.AddIncorrectSearch(username, mention, tag, isCorrectSearch);
+            FileReader.LogSearch(username, mention, tag, isCorrectSearch);
 
             await ctx.RespondAsync(message);
         }
@@ -222,7 +230,7 @@ namespace lol_facts.Commands
             if (message.Length > 2000)
                 message = message.Remove(2000);
 
-            using (var fs = new FileStream(Constant.FactsWithUnknownTagFilePath, FileMode.Open, FileAccess.Read))
+            using (var fs = new FileStream(Constant.FactsSearchLoggedFilePath, FileMode.Open, FileAccess.Read))
             {
                 var msg = await new DiscordMessageBuilder()
                     .WithContent(message)

@@ -6,6 +6,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using lol_facts.Constants;
+using CsvHelper;
+using System.Globalization;
+using CsvHelper.Configuration;
 
 namespace lol_facts.IO
 {
@@ -14,13 +17,22 @@ namespace lol_facts.IO
         public static void CreateFilesIfNotExist()
         {
             if (!File.Exists(Constant.EnabledChannelsFilePath))
+            {
+                Directory.CreateDirectory(Path.GetDirectoryName(Constant.EnabledChannelsFilePath));
                 File.Create(Constant.EnabledChannelsFilePath);
+            }
 
-            if (!File.Exists(Constant.FactsWithUnknownTagFilePath))
-                File.Create(Constant.FactsWithUnknownTagFilePath);
+            if (!File.Exists(Constant.FactsSearchLoggedFilePath))
+            {
+                Directory.CreateDirectory(Path.GetDirectoryName(Constant.FactsSearchLoggedFilePath));
+                File.Create(Constant.FactsSearchLoggedFilePath);
+            }
 
             if (!File.Exists(Constant.ChangelogChannelsFilePath))
+            {
+                Directory.CreateDirectory(Path.GetDirectoryName(Constant.ChangelogChannelsFilePath));
                 File.Create(Constant.ChangelogChannelsFilePath);
+            }
         }
 
         /// <summary>
@@ -34,7 +46,12 @@ namespace lol_facts.IO
 
             foreach (var rawFactFile in rawFactsFiles)
             {
-                facts += string.Join('\n', File.ReadAllLines(rawFactFile).ToList().Skip(1)) + '\n';
+                string fact = string.Join('\n', File.ReadAllLines(rawFactFile).ToList().Skip(1)) + '\n';
+
+                if (!string.IsNullOrWhiteSpace(fact))
+                {
+                    facts += fact;
+                }
             }
 
             File.WriteAllText(Constant.FactsFilePath, facts);
@@ -50,9 +67,16 @@ namespace lol_facts.IO
 
             string result = string.Empty;
 
+            if (changelogs == null || changelogs.Count == 0)
+            {
+                Console.WriteLine("Aucune fichier Changelog trouvé.");
+            }
+
             // If there are multiple changelogs, we write them all
             foreach (var changelog in changelogs)
             {
+                Console.WriteLine($"Fichier Changelog trouvé : '{changelog}'.");
+
                 // Notes the version of the file
                 result += Path.GetFileNameWithoutExtension(changelog) + "\n\n";
 
@@ -68,12 +92,13 @@ namespace lol_facts.IO
         /// <returns></returns>
         public static List<Fact> ReadAllFacts()
         {
-            var result = File.ReadAllLines(Constant.FactsFilePath)
-                             //.Skip(1)
-                             .Select(content => FromCsvToFact(content))
-                             .ToList();
+            using (var reader = new StreamReader(Constant.FactsFilePath))
+            using (var csv = new CsvReader(reader, Constant.csvConfiguration))
+            {
+                var result = csv.GetRecords<Fact>().ToList();
 
-            return result;
+                return result;
+            }
         }
 
         /// <summary>
@@ -140,8 +165,7 @@ namespace lol_facts.IO
         /// <returns></returns>
         public static List<string> ReadAllEnabledChangelogChannels()
         {
-            var enabledChangelogChannels = File.ReadAllLines(Constant.ChangelogChannelsFilePath)
-                                   .ToList();
+            var enabledChangelogChannels = File.ReadAllLines(Constant.ChangelogChannelsFilePath).ToList();
 
             return enabledChangelogChannels;
         }
@@ -153,43 +177,57 @@ namespace lol_facts.IO
         /// <param name="mention"></param>
         /// <param name="tag"></param>
         /// <param name="isCorrectSearch">Allows us to discriminate if the searched tag already exists or not</param>
-        public static void AddIncorrectSearch(string username, string mention, string tag, bool isCorrectSearch)
+        public static void LogSearch(string username, string mention, string tag, bool isCorrectSearch)
         {
-            var data = File.ReadAllLines(Constant.FactsWithUnknownTagFilePath)
-                             .Select(content => FromCsvToFactsWithUnknownTag(content))
-                             .ToList();
-
-            var element = data.Where(d => d.UserName == username && d.Mention == mention && d.Tag == tag && d.IsCorrectSearch == isCorrectSearch).FirstOrDefault();
-
-            if (element == null)
+            if (tag == null)
             {
-                data.Add(new FactsWithUnknownTag()
+                tag = string.Empty;
+            }
+
+            tag = tag.ToLower();
+
+            List<FactsSearchLogged> data;
+
+            using (var reader = new StreamReader(Constant.FactsSearchLoggedFilePath))
+            using (var csv = new CsvReader(reader, Constant.csvConfiguration))
+            {
+                data = csv.GetRecords<FactsSearchLogged>().ToList();
+
+                // Tries to look up for a similar entry like the one we're trying to log
+                var element = data.Where(d => d.UserName == username && d.Mention == mention && d.Tag == tag && d.IsCorrectSearch == isCorrectSearch).FirstOrDefault();
+
+                if (element == null)
                 {
-                    UserName = username,
-                    Mention = mention,
-                    Tag = tag,
-                    Count = 1,
-                    IsCorrectSearch = isCorrectSearch,
-                });
-            }
-            else
-            {
-                element.Count++;
+                    data.Add(new FactsSearchLogged()
+                    {
+                        UserName = username,
+                        Mention = mention,
+                        Tag = tag,
+                        Count = 1,
+                        IsCorrectSearch = isCorrectSearch,
+                    });
+                }
+                else
+                {
+                    element.Count++;
+                }
             }
 
-            File.WriteAllLines(Constant.FactsWithUnknownTagFilePath, FromFactsWithUnknownTagToCsv(data));
+            File.WriteAllLines(Constant.FactsSearchLoggedFilePath, FromFactsWithUnknownTagToCsv(data));
         }
 
         /// <summary>
         /// Reads all stats from the fact request
         /// </summary>
-        public static List<FactsWithUnknownTag> ReadAllStats()
+        public static List<FactsSearchLogged> ReadAllStats()
         {
-            var data = File.ReadAllLines(Constant.FactsWithUnknownTagFilePath)
-                             .Select(content => FromCsvToFactsWithUnknownTag(content))
-                             .ToList();
+            using (var reader = new StreamReader(Constant.FactsSearchLoggedFilePath))
+            using (var csv = new CsvReader(reader, Constant.csvConfiguration))
+            {
+                var data = csv.GetRecords<FactsSearchLogged>().ToList();
 
-            return data;
+                return data;
+            }
         }
 
         /// <summary>
@@ -208,51 +246,11 @@ namespace lol_facts.IO
         #region Private methods
 
         /// <summary>
-        /// Converts a csv line to a Fact object
-        /// </summary>
-        /// <param name="content"></param>
-        /// <returns></returns>
-        private static Fact FromCsvToFact(string content)
-        {
-            var values = content.Split(';');
-
-            Fact result = new Fact()
-            {
-                Name = values[0],
-                Text = values[1],
-                OriginalText = values[2],
-                Tags = values[3].Split(',').ToList(),
-            };
-
-            return result;
-        }
-
-        /// <summary>
-        /// Converts a csv file to a FactsWithUnknownTag object
-        /// </summary>
-        /// <param name="content"></param>
-        private static FactsWithUnknownTag FromCsvToFactsWithUnknownTag(string content)
-        {
-            var values = content.Split(';');
-
-            FactsWithUnknownTag result = new FactsWithUnknownTag()
-            {
-                UserName = values[0],
-                Mention = values[1],
-                Tag = values[2],
-                Count = int.Parse(values[3]),
-                IsCorrectSearch = bool.Parse(values[4]),
-            };
-
-            return result;
-        }
-
-        /// <summary>
         /// Converts a list of FactsWithUnknownTag objects to a csv file
         /// </summary>
         /// <param name="data"></param>
         /// <returns></returns>
-        private static List<string> FromFactsWithUnknownTagToCsv(List<FactsWithUnknownTag> data)
+        private static List<string> FromFactsWithUnknownTagToCsv(List<FactsSearchLogged> data)
         {
             List<string> result = data.Select(d => $"{d.UserName};{d.Mention};{d.Tag};{d.Count};{d.IsCorrectSearch}").ToList();
 

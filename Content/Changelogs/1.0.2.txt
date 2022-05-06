@@ -1,0 +1,14 @@
+﻿Correction d'un bug où un fact n'avait rien d'affiché.
+Correction d'un bug où les fact qui comportaient des ';' ne s'affichaient pas correctement.
+
+Suppression du Fact indiquant la possibilité d'améliorer la Trinket gratuitement au niveau 9.
+
+**Contenu**
+Ajout de Facts sur Bandle City !
+Ajout de Facts sur Bilgewater !
+
+Réordonnancement des Facts principaux dans l'ordre suivant :
+	0 - Ecran de chargement
+	1 - Régions
+	2 - Espèces
+	3 - Champions

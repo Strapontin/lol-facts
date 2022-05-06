@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace lol_facts.Entities
 {
-    public class FactsWithUnknownTag
+    public class FactsSearchLogged
     {
         public string UserName { get; set; }
         public string Mention { get; set; }

@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace lol_facts.Entities
 {
-    public class Fact
+    public class test
     {
         [Index(0)]
         public string Name { get; set; }

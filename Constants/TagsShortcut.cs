@@ -22,6 +22,10 @@ namespace lol_facts.Constants
         public static readonly Dictionary<string, IList<string>> TagShortcut = new()
         {
             { "Miss Fortune", new ReadOnlyCollection<string>(new List<string> { "mf", "fortune" }) },
+            { "Razorfin", new ReadOnlyCollection<string>(new List<string> { "WharfRat" }) },
+            { "Harrowing", new ReadOnlyCollection<string>(new List<string> { "NuitDeLHorreur" }) },
+            { "Enlightened", new ReadOnlyCollection<string>(new List<string> { "Illumine", "Illumines",  }) },
+            { "ShadowIsles", new ReadOnlyCollection<string>(new List<string> { "IlesObscures", "IlesObscure", "IleObscure", "IleObscures" }) },
         };
     }
 }
