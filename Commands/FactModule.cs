@@ -117,7 +117,10 @@ namespace lol_facts.Commands
                 // Shows all tags on this fact
                 message += $" ({string.Join(", ", fact.Tags)})";
 
-                string factTextFormatted = fact.Text.Replace("\"\"", "\"").Replace("\\n", "\n");
+                string factTextFormatted = fact.Text
+                    .Replace("\"\"", "\"")
+                    .Replace("\\n", "\n")
+                    .Replace("\\t", "\t");
 
                 if (factTextFormatted.StartsWith('"'))
                 {

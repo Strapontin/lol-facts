@@ -11,7 +11,7 @@ namespace lol_facts.Constants
     {
         public static string ReplaceTagsShortcut(string tag)
         {
-            string mainName = TagShortcut.Where(ts => ts.Value.Contains(tag)).FirstOrDefault().Key;
+            string mainName = TagShortcut.Where(ts => ts.Value.Any(v => v.FormatTag() == tag.FormatTag())).FirstOrDefault().Key;
 
             if (mainName == null)
                 return tag;
@@ -22,10 +22,17 @@ namespace lol_facts.Constants
         public static readonly Dictionary<string, IList<string>> TagShortcut = new()
         {
             { "Miss Fortune", new ReadOnlyCollection<string>(new List<string> { "mf", "fortune" }) },
-            { "Razorfin", new ReadOnlyCollection<string>(new List<string> { "WharfRat" }) },
+            { "Razorfin", new ReadOnlyCollection<string>(new List<string> { "WharfRat", "RatDeQuai", "RatsDeQuai", "RatsQuai", "RatsQuais" }) },
             { "Harrowing", new ReadOnlyCollection<string>(new List<string> { "NuitDeLHorreur" }) },
             { "Enlightened", new ReadOnlyCollection<string>(new List<string> { "Illumine", "Illumines",  }) },
             { "ShadowIsles", new ReadOnlyCollection<string>(new List<string> { "IlesObscures", "IlesObscure", "IleObscure", "IleObscures" }) },
+            { "AbyssalEye", new ReadOnlyCollection<string>(new List<string> { "RegardDesProfondeurs", "RegardsDesProfondeurs", "RegardProfondeurs", "RegardsProfondeurs" }) },
+            { "DragonShark", new ReadOnlyCollection<string>(new List<string> { "RequinDragon" }) },
+            { "GiantCrab", new ReadOnlyCollection<string>(new List<string> { "CrabeGeant" }) },
+            { "GiantSquid", new ReadOnlyCollection<string>(new List<string> { "CalamarGeant" }) },
+            { "GoldenNarwhal", new ReadOnlyCollection<string>(new List<string> { "NarvalDore" }) },
+            { "ScuttlerCrab", new ReadOnlyCollection<string>(new List<string> { "Carapateur" }) },
+            { "WingEaredDevour", new ReadOnlyCollection<string>(new List<string> { "DevoreursaOreillesAilees" }) },
         };
     }
 }
