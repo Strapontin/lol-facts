@@ -3,6 +3,7 @@ using DSharpPlus.CommandsNext;
 using DSharpPlus.Entities;
 using DSharpPlus.Interactivity;
 using DSharpPlus.Interactivity.Extensions;
+using DSharpPlus.SlashCommands;
 using lol_facts.Commands;
 using lol_facts.Entities;
 using lol_facts.IO;
@@ -34,43 +35,19 @@ namespace lol_facts
                 MinimumLogLevel = Microsoft.Extensions.Logging.LogLevel.Debug,
             });
 
-            // Allows us to use modules in Command folder
-            var commands = discord.UseCommandsNext(new CommandsNextConfiguration()
-            {
-                StringPrefixes = new[] { "!" }
-            });
-            //commands.RegisterCommands<GeneralModule>();
-            commands.RegisterCommands<FactModule>();
-            commands.SetHelpFormatter<Help>();
+            var slash = discord.UseSlashCommands();
+            slash.RegisterCommands<EmptyGlobalCommandToAvoidFamousDuplicateSlashCommandsBug>();
+            slash.RegisterCommands<SlashCommands>();
 
             discord.UseInteractivity(new InteractivityConfiguration()
             {
                 PollBehaviour = DSharpPlus.Interactivity.Enums.PollBehaviour.KeepEmojis,
             });
 
-
-
             // On button clicked
             discord.ComponentInteractionCreated += async (discordClient, componentInteractionCreateEventArgs) =>
             {
-                if (componentInteractionCreateEventArgs.Id.Contains("my_very_cool_button"))
-                {
-                    // Renvoie un message lié à celui possédant les boutons
-                    await componentInteractionCreateEventArgs.Interaction.CreateResponseAsync(InteractionResponseType.ChannelMessageWithSource, new DiscordInteractionResponseBuilder().WithContent("Cool"));
-                }
-                else if (componentInteractionCreateEventArgs.Id == "1_top")
-                {
-                    await componentInteractionCreateEventArgs.Interaction.CreateResponseAsync(InteractionResponseType.UpdateMessage, new DiscordInteractionResponseBuilder().WithContent("No more buttons for you >:)"));
-                }
-                else
-                {
-                    await componentInteractionCreateEventArgs.Interaction.CreateResponseAsync(InteractionResponseType.DeferredMessageUpdate);
-                }
-            };
-
-            discord.ClientErrored += async (discordClient, componentInteractionCreateEventArgs) =>
-            {
-                Console.WriteLine(componentInteractionCreateEventArgs);
+                await ButtonInteractions.HandleInteraction(componentInteractionCreateEventArgs);
             };
 
             discord.Ready += async (discordClient, componentInteractionCreateEventArgs) =>

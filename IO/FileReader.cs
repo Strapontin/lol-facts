@@ -22,12 +22,6 @@ namespace lol_facts.IO
                 File.Create(Constant.EnabledChannelsFilePath);
             }
 
-            if (!File.Exists(Constant.FactsSearchLoggedFilePath))
-            {
-                Directory.CreateDirectory(Path.GetDirectoryName(Constant.FactsSearchLoggedFilePath));
-                File.Create(Constant.FactsSearchLoggedFilePath);
-            }
-
             if (!File.Exists(Constant.ChangelogChannelsFilePath))
             {
                 Directory.CreateDirectory(Path.GetDirectoryName(Constant.ChangelogChannelsFilePath));
@@ -92,13 +86,11 @@ namespace lol_facts.IO
         /// <returns></returns>
         public static List<Fact> ReadAllFacts()
         {
-            using (var reader = new StreamReader(Constant.FactsFilePath))
-            using (var csv = new CsvReader(reader, Constant.csvConfiguration))
-            {
-                var result = csv.GetRecords<Fact>().ToList();
+            using var reader = new StreamReader(Constant.FactsFilePath);
+            using var csv = new CsvReader(reader, Constant.csvConfiguration);
+            var result = csv.GetRecords<Fact>().ToList();
 
-                return result;
-            }
+            return result;
         }
 
         /// <summary>
@@ -168,66 +160,6 @@ namespace lol_facts.IO
             var enabledChangelogChannels = File.ReadAllLines(Constant.ChangelogChannelsFilePath).ToList();
 
             return enabledChangelogChannels;
-        }
-
-        /// <summary>
-        /// Adds an incorrect search (tag non-existing) to the fact command log
-        /// </summary>
-        /// <param name="username"></param>
-        /// <param name="mention"></param>
-        /// <param name="tag"></param>
-        /// <param name="isCorrectSearch">Allows us to discriminate if the searched tag already exists or not</param>
-        public static void LogSearch(string username, string mention, string tag, bool isCorrectSearch)
-        {
-            if (tag == null)
-            {
-                tag = string.Empty;
-            }
-
-            tag = tag.ToLower();
-
-            List<FactsSearchLogged> data;
-
-            using (var reader = new StreamReader(Constant.FactsSearchLoggedFilePath))
-            using (var csv = new CsvReader(reader, Constant.csvConfiguration))
-            {
-                data = csv.GetRecords<FactsSearchLogged>().ToList();
-
-                // Tries to look up for a similar entry like the one we're trying to log
-                var element = data.Where(d => d.UserName == username && d.Mention == mention && d.Tag == tag && d.IsCorrectSearch == isCorrectSearch).FirstOrDefault();
-
-                if (element == null)
-                {
-                    data.Add(new FactsSearchLogged()
-                    {
-                        UserName = username,
-                        Mention = mention,
-                        Tag = tag,
-                        Count = 1,
-                        IsCorrectSearch = isCorrectSearch,
-                    });
-                }
-                else
-                {
-                    element.Count++;
-                }
-            }
-
-            File.WriteAllLines(Constant.FactsSearchLoggedFilePath, FromFactsWithUnknownTagToCsv(data));
-        }
-
-        /// <summary>
-        /// Reads all stats from the fact request
-        /// </summary>
-        public static List<FactsSearchLogged> ReadAllStats()
-        {
-            using (var reader = new StreamReader(Constant.FactsSearchLoggedFilePath))
-            using (var csv = new CsvReader(reader, Constant.csvConfiguration))
-            {
-                var data = csv.GetRecords<FactsSearchLogged>().ToList();
-
-                return data;
-            }
         }
 
         /// <summary>
