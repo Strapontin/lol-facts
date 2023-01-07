@@ -1,4 +1,5 @@
-﻿using DSharpPlus.Entities;
+﻿using DSharpPlus;
+using DSharpPlus.Entities;
 using DSharpPlus.SlashCommands;
 using lol_facts.Classes;
 using lol_facts.IO;
@@ -12,9 +13,16 @@ namespace lol_facts.Commands
 {
     public class SlashCommands : ApplicationCommandModule
     {
-        public override Task<bool> BeforeSlashExecutionAsync(InteractionContext ctx)
+        public override async Task<bool> BeforeSlashExecutionAsync(InteractionContext ctx)
         {
-            return Task.FromResult(FactsManager.CanExecuteSlashCommand(ctx));
+            bool result = FactsManager.CanExecuteSlashCommand(ctx);
+
+            if (!result)
+            {
+                await ctx.CreateResponseAsync("Ce channel n'est pas autorisé pour le bot !", true);
+            }
+
+            return result;
         }
 
         [SlashCommand("fact", "Affiche un fact sur l'univers de League of Legends !")]
@@ -28,8 +36,7 @@ namespace lol_facts.Commands
                 return;
             }
 
-            var content = new DiscordInteractionResponseBuilder()
-                .WithContent(FactsManager.GetFactMessage(tag, indexInt));
+            var content = DiscordMessageBuilderHelper.BuildMessageFacts(tag, indexInt);
 
             await ctx.CreateResponseAsync(content);
         }

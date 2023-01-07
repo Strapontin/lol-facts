@@ -31,15 +31,20 @@ namespace lol_facts.Classes
             return true;
         }
 
-        public static string GetFactMessage(string tag, int index)
+        private static List<Fact> GetFactsWithTag(string tag)
         {
-            string formattedTag = TagsShortcut.ReplaceTagsShortcut(tag);
+            string formattedTag = TagsShortcut.ReplaceTagsShortcut(tag).FormatTag();
 
+            return FileReader.ReadAllFacts()
+                .Where(f => string.IsNullOrEmpty(formattedTag) || f.Tags.Select(t => t.FormatTag()).Contains(formattedTag))
+                .ToList();
+        }
+
+        public static string GetFactMessage(string tag, ref int index)
+        {
             index--;
 
-            List<Fact> facts = FileReader.ReadAllFacts()
-                .Where(f => string.IsNullOrEmpty(tag) || f.Tags.Select(t => t.FormatTag()).Contains(formattedTag.FormatTag()))
-                .ToList();
+            List<Fact> facts = GetFactsWithTag(tag);
 
 
             Fact fact;
@@ -63,14 +68,12 @@ namespace lol_facts.Classes
                 }
                 else
                 {
-                    Random random = new();
-                    index = random.Next(facts.Count);
-
+                    index = new Random().Next(facts.Count);
                     fact = facts[index];
                 }
 
                 // Fact header : index
-                message = $"Fact {index + 1}/{facts.Count}";
+                message = $"Fact {++index}/{facts.Count}";
 
                 // Shows the tag selected if there is one
                 if (!string.IsNullOrEmpty(tag))
@@ -95,6 +98,11 @@ namespace lol_facts.Classes
             }
 
             return message;
+        }
+
+        public static int CountFactsWithTag(string tag)
+        {
+            return GetFactsWithTag(tag).Count;
         }
     }
 }
