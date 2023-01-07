@@ -25,6 +25,7 @@ namespace lol_facts.Commands
             return result;
         }
 
+
         [SlashCommand("fact", "Affiche un fact sur l'univers de League of Legends !")]
         public static async Task FactCommand(InteractionContext ctx,
             [Option("Tag", "Un tag spécifique à rechercher.")] string tag = null,

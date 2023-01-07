@@ -14,6 +14,7 @@ namespace lol_facts.Constants
         // Data that gets modified on the run : should not be changed between versions
         public const string EnabledChannelsFilePath = "../_Content_lol-facts/EnabledChannels.csv";
         public const string ChangelogChannelsFilePath = "../_Content_lol-facts/ChangelogChannels.csv";
+        public const string TimerMessagePath = "../_Content_lol-facts/TimerMessageData.csv";
 
         // Permanent data that changes with the version, not as the program runs
         public const string FactsFilePath = "./Content/Facts.csv";

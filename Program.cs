@@ -4,6 +4,7 @@ using DSharpPlus.Entities;
 using DSharpPlus.Interactivity;
 using DSharpPlus.Interactivity.Extensions;
 using DSharpPlus.SlashCommands;
+using lol_facts.Classes;
 using lol_facts.Commands;
 using lol_facts.Entities;
 using lol_facts.IO;
@@ -38,6 +39,7 @@ namespace lol_facts
             var slash = discord.UseSlashCommands();
             slash.RegisterCommands<EmptyGlobalCommandToAvoidFamousDuplicateSlashCommandsBug>();
             slash.RegisterCommands<SlashCommands>();
+            slash.RegisterCommands<TimerSlashCommands>();
 
             discord.UseInteractivity(new InteractivityConfiguration()
             {
@@ -53,8 +55,12 @@ namespace lol_facts
             discord.Ready += async (discordClient, componentInteractionCreateEventArgs) =>
             {
                 // On discord ready, send a changelog to all channels that ask for it if we're in release 
-#if !DEBUG
+#if DEBUG
+                return;
+#endif
+#pragma warning disable CS0162 // Unreachable code detected
                 string changelogContent = FileReader.ReadLastAvailableChangelog();
+#pragma warning restore CS0162 // Unreachable code detected
 
                 if (!string.IsNullOrEmpty(changelogContent))
                 {
@@ -68,12 +74,19 @@ namespace lol_facts
 
                     FileReader.ArchiveChangelogs();
                 }
-#endif
             };
 
             FileReader.GenerateFactFile();
 
             await discord.ConnectAsync();
+
+            // If the bot shut downed and restarted, it needs the timers back
+            discord.GuildAvailable += (s, e) =>
+            {
+                TimerMessageCommand.RestartTimersOnAppStarting(discord);
+                return Task.CompletedTask;
+            };
+
             await Task.Delay(-1);
         }
     }

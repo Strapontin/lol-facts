@@ -16,16 +16,20 @@ namespace lol_facts.IO
     {
         public static void CreateFilesIfNotExist()
         {
-            if (!File.Exists(Constant.EnabledChannelsFilePath))
+            List<string> paths = new()
             {
-                Directory.CreateDirectory(Path.GetDirectoryName(Constant.EnabledChannelsFilePath));
-                File.Create(Constant.EnabledChannelsFilePath);
-            }
+                Constant.EnabledChannelsFilePath,
+                Constant.ChangelogChannelsFilePath,
+                Constant.TimerMessagePath,
+            };
 
-            if (!File.Exists(Constant.ChangelogChannelsFilePath))
+            foreach (var path in paths)
             {
-                Directory.CreateDirectory(Path.GetDirectoryName(Constant.ChangelogChannelsFilePath));
-                File.Create(Constant.ChangelogChannelsFilePath);
+                if (!File.Exists(path))
+                {
+                    Directory.CreateDirectory(Path.GetDirectoryName(path));
+                    File.Create(path);
+                }
             }
         }
 
@@ -158,14 +162,14 @@ namespace lol_facts.IO
         public static List<string> ReadAllEnabledChangelogChannels()
         {
             var enabledChangelogChannels = File.ReadAllLines(Constant.ChangelogChannelsFilePath).ToList();
-
             return enabledChangelogChannels;
         }
 
         /// <summary>
         /// Moves the change log files to the archives folder so they won't be send again
+        /// NOT CALLED IN DEBUG
         /// </summary>
-        internal static void ArchiveChangelogs()
+        public static void ArchiveChangelogs()
         {
             var changelogs = Directory.GetFiles(Constant.ChangelogPath, string.Empty, SearchOption.TopDirectoryOnly).ToList();
 
@@ -175,19 +179,62 @@ namespace lol_facts.IO
             }
         }
 
-        #region Private methods
+        #region Timers
 
         /// <summary>
-        /// Converts a list of FactsWithUnknownTag objects to a csv file
+        /// Add a timer to the log files
         /// </summary>
-        /// <param name="data"></param>
-        /// <returns></returns>
-        private static List<string> FromFactsWithUnknownTagToCsv(List<FactsSearchLogged> data)
+        /// <param name="timerMessage"></param>
+        public static void AddTimer(TimerMessage timerMessage)
         {
-            List<string> result = data.Select(d => $"{d.UserName};{d.Mention};{d.Tag};{d.Count};{d.IsCorrectSearch}").ToList();
+            var data = ReadAllTimers();
+            data.Add(timerMessage);
 
-            return result;
+            File.WriteAllLines(Constant.TimerMessagePath, data.Select(d => $"{d.Id};{d.DiscordChannelId};{d.Day};{d.Hour}"));
         }
+
+        /// <summary>
+        /// Read all timers in the csv file
+        /// </summary>
+        /// <returns></returns>
+        public static List<TimerMessage> ReadAllTimers()
+        {
+            List<TimerMessage> data;
+
+            using (var reader = new StreamReader(Constant.TimerMessagePath))
+            using (var csv = new CsvReader(reader, Constant.csvConfiguration))
+            {
+                data = csv.GetRecords<TimerMessage>().ToList();
+            }
+
+            return data;
+        }
+
+        /// <summary>
+        /// Returns the FileStream of the timer file
+        /// </summary>
+        /// <returns></returns>
+        public static FileStream GetTimerFile()
+        {
+            FileStream fsSource = new(Constant.TimerMessagePath, FileMode.Open, FileAccess.Read);
+            return fsSource;
+        }
+
+        /// <summary>
+        /// Delete a timer in the timer file
+        /// </summary>
+        /// <param name="id"></param>
+        public static void RemoveLineFromId(uint id)
+        {
+            var data = ReadAllTimers();
+            data.RemoveAll(d => d.Id == id);
+
+            File.WriteAllLines(Constant.TimerMessagePath, data.Select(d => $"{d.Id};{d.DiscordChannelId};{d.Day};{d.Hour}"));
+        }
+
+        #endregion
+
+        #region Private methods
 
         /// <summary>
         /// Reads all enabled channels
@@ -197,7 +244,6 @@ namespace lol_facts.IO
         {
             var enabledChannels = File.ReadAllLines(Constant.EnabledChannelsFilePath)
                                    .ToList();
-
             return enabledChannels;
         }
 
