@@ -86,9 +86,10 @@
     <None Update="Content\RawFacts\2-Species\Vastaya.csv">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
-    <None Update="Content\RawFacts\3-Champions\Aatrox.csv">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Content\RawFacts\3-Champions\" />
   </ItemGroup>
 
   <Target Name="PostBuild" AfterTargets="PostBuildEvent">
